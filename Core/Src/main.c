@@ -82,12 +82,13 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-//  uint8_t tx_buff_read_addr[] = {0x01, 0x03, 0x07, 0xD0, 0x00, 0x02, 0xC4, 0x86};
-  uint8_t tx_buff_read_co2[] = {0x01, 0x03, 0x00, 0x02, 0x00, 0x01, 0x25, 0xCA};
-//  uint8_t rx_buff_addr[9];
+  uint8_t tx_buff_read_addr[8] = {0x01, 0x03, 0x07, 0xD0, 0x00, 0x02, 0xC4, 0x86};
+  uint8_t tx_buff_read_co2[8] = {0x01, 0x03, 0x00, 0x02, 0x00, 0x01, 0x25, 0xCA};
+  uint8_t addr_correct[9] = {0x01, 0x03, 0x04, 0x00, 0x01, 0x00, 0x01, 0x6A, 0x33};
+  uint8_t rx_buff_addr[9];
   uint8_t rx_buff_co2[7];
 
-  char txt_buffer[50]; // Buffer to hold the converted string
+  char txt_buffer[100]; // Buffer to hold the converted string
 
   int co2 = 0;  // percentage * 100
 
@@ -108,6 +109,25 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  while (1)  // ensure that the CO2 sensor is correctly initialized
+  {
+	  HAL_Delay(500);
+
+      RS485_EnableTX();
+      HAL_UART_Transmit(&huart3, tx_buff_read_addr, sizeof(tx_buff_read_addr), HAL_MAX_DELAY);
+
+      // Switch to RX and receive data
+      RS485_EnableRX();
+      HAL_UART_Receive(&huart3, rx_buff_addr, sizeof(rx_buff_addr), HAL_MAX_DELAY);
+
+      if(rx_buff_addr[7]==addr_correct[7] && rx_buff_addr[8]==addr_correct[8])
+      {
+    	  sprintf(txt_buffer, "The address check has passed! Start the controller now!\r\n");
+    	  HAL_UART_Transmit(&huart1, (uint8_t*)txt_buffer, strlen(txt_buffer), HAL_MAX_DELAY);
+    	  break;
+      }
+  }
 
   /* USER CODE END 2 */
 
