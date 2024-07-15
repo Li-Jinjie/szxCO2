@@ -129,7 +129,7 @@ int main(void)
       // get CO2 concentration
       co2 = (int)rx_buff_co2[3] * 100 + ((int)rx_buff_co2[4]);
 
-      sprintf(txt_buffer, "CO2 now is %d.%d %%", co2/100, co2%100);
+      sprintf(txt_buffer, "CO2 now is %d.%d %%\r\n", co2/100, co2%100);
 
       HAL_UART_Transmit(&huart1, (uint8_t*)txt_buffer, strlen(txt_buffer), HAL_MAX_DELAY);
 
