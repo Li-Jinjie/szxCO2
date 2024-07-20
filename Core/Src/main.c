@@ -156,13 +156,21 @@ int main(void)
       {
           sprintf(txt_buffer, "CRC is incorrect. Correct: %u, Received: %u.\r\n", crc_correct, crc_received);
           HAL_UART_Transmit(&huart1, (uint8_t*)txt_buffer, strlen(txt_buffer), HAL_MAX_DELAY);
+
+          // clear all waiting data.
+          uint8_t rx_char;
+          while (HAL_UART_Receive(&huart3, &rx_char, 1, 5) == HAL_OK) { }
+
           continue;
       }
 
       // get CO2 concentration
       co2 = (int)rx_buff_co2[3] * 256 + ((int)rx_buff_co2[4]);
 
-      sprintf(txt_buffer, "CO2 now is %d.%d %%\r\n", co2 / 100, co2 % 100);
+      if (co2 % 100 < 10)
+    	  sprintf(txt_buffer, "CO2 now is %d.0%d %%\r\n", co2 / 100, co2 % 100);
+      else
+    	  sprintf(txt_buffer, "CO2 now is %d.%d %%\r\n", co2 / 100, co2 % 100);
 
       HAL_UART_Transmit(&huart1, (uint8_t*)txt_buffer, strlen(txt_buffer), HAL_MAX_DELAY);
 
