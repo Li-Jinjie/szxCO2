@@ -57,6 +57,7 @@ static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void RS485_EnableTX(void);
 void RS485_EnableRX(void);
+static uint16_t MODBUS_CRC16_v1( const unsigned char *buf, unsigned int len );
 
 /* USER CODE END PFP */
 
@@ -146,6 +147,17 @@ int main(void)
       // Switch to RX and receive data
       RS485_EnableRX();
       HAL_UART_Receive(&huart3, rx_buff_co2, sizeof(rx_buff_co2), HAL_MAX_DELAY);
+
+      // Check CRC
+      uint16_t crc_correct = MODBUS_CRC16_v1(rx_buff_co2, 5);
+      uint16_t crc_received = (rx_buff_co2[6] << 8) | rx_buff_co2[5];  // Combine high and low bits correctly
+
+      if (crc_received != crc_correct)
+      {
+          sprintf(txt_buffer, "CRC is incorrect. Correct: %u, Received: %u.\r\n", crc_correct, crc_received);
+          HAL_UART_Transmit(&huart1, (uint8_t*)txt_buffer, strlen(txt_buffer), HAL_MAX_DELAY);
+          continue;
+      }
 
       // get CO2 concentration
       co2 = (int)rx_buff_co2[3] * 256 + ((int)rx_buff_co2[4]);
@@ -315,6 +327,32 @@ void RS485_EnableTX(void) {
 void RS485_EnableRX(void) {
     HAL_GPIO_WritePin(TX_485_EN_GPIO_Port, TX_485_EN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(RX_485_EN_GPIO_Port, RX_485_EN_Pin, GPIO_PIN_RESET);
+}
+
+static uint16_t MODBUS_CRC16_v1( const unsigned char *buf, unsigned int len )
+{
+	uint16_t crc = 0xFFFF;
+	char i = 0;
+
+	while(len--)
+	{
+		crc ^= (*buf++);
+
+		for(i = 0; i < 8; i++)
+		{
+			if( crc & 1 )
+			{
+				crc >>= 1;
+				crc ^= 0xA001;
+			}
+			else
+			{
+				crc >>= 1;
+			}
+		}
+	}
+
+	return crc;
 }
 
 /* USER CODE END 4 */
